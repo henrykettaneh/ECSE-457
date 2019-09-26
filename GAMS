@@ -1,0 +1,176 @@
+$title Wind-Diesel-Storage Bouffard
+
+* Operational optimization of wind-diesel-storage system including
+* load shedding and a dump load (can handle non-convex generation costs)
+* Francois Bouffard
+* Version 2.1
+* DP 2017-2018 fork
+* 2017/10/06
+*
+* Copyright Francois Bouffard, 2015-2017
+
+Option optcr = 0.01;
+Option mip = cplex;
+Option solprint = off;
+Option reslim = 3600;
+
+$OnText
+*** List of sets, parameters variables for information. Data file contains duplicate declarations.
+sets        t   Time index
+            i   Generator index
+            k   Generator operation range index
+;
+
+table       gcon(i,k,*) Generating unit incremental fuel consumption data
+;
+
+parameters  voll    value of lost load
+            prdi    price of diesel (dollar per l)
+            effc    compression efficiency (pu)
+            effd    decompression efficiency (pu)
+            emax    ESS rated energy (kWh)
+            emin    minimum state of charge (kWh)
+            pmax    ESS rated power (kW)
+            e0      initial state of charge (pu)
+            eT      terminal state of charge (pu)
+            wmax    WTG rated power (kW)
+            w(t)    wind power output (pu)
+            somax   solar rated power (kW)
+            s(t)    solar power output (pu)
+            dmax    peak demand (kW)
+            d(t)    demand (pu)
+;
+$OffText
+
+$include "communityX.gms";
+
+* If convex diesel consumption curves use
+$OnText
+variables   netcost     overall system operation cost
+            e(t)        ESS state of charge (kWh)
+            x(t)        rate of charge of ESS (kW)
+            y(t)        rate of discharge of ESS (kW)
+            z(t)        state of ESS operation 1 if charging 0 if discharging
+            g(i,t)      dispatch level of diesel generator i (kW)
+            h(i,t)      operating consumption of generator i (l)
+            u(i,t)      commitment status of unit i 1 if on 0 otherwise
+            l(t)        load shedding (kW)
+            c(t)        dump load use (kW)
+;
+positive variables x, y, g, l, c;
+binary variables u, z;
+$OffText
+
+* If non-convex diesel consumption curves use
+*$OnText
+variables   netcost     overall system operation cost
+            e(t)        ESS state of charge (kWh)
+            x(t)        rate of charge of ESS (kW)
+            y(t)        rate of discharge of ESS (kW)
+            z(t)        state of ESS operation 1 if charging 0 if discharging
+            g(i,t)      dispatch level of diesel generator i (kW)
+            h(i,t)      operating consumption of generator i (l)
+            u(i,t)      commitment status of unit i 1 if on 0 otherwise
+            v(i,t,k)    binary variable to ensure coherent genset use if cost is non-convex
+            j(i,t,k)    generator block use
+            l(t)        load shedding (kW)
+            c(t)        dump load use (kW)
+;
+positive variables x, y, g, l, c, j;
+binary variables u, v, z;
+* To force on unit A
+*u.fx('A',t) = 1;
+*$OffText
+
+equations   objective_convex   overall system cost calculation for convex costs
+            objective_non_convex    overall system cost calculation for non-convex costs
+            pow_bal(t)  system power balance at period t
+            ess_bal(t)  ESS energy continuity at period t
+            ess_ch(t)   ESS maximum charging rate
+            ess_di(t)   ESS maximum discharging rate
+            ess_up(t)   ESS state of charge upper bound
+            ess_dn(t)   ESS state of charge lower bound
+            ess_t0(t)   ESS initial state of charge
+            ess_tT(t)   ESS final state of charge
+            gen_up(i,t) generator upper limit
+            gen_dn(i,t) generator lower limit
+            gen_co(i,t,k) lower bound on diesel generation fuel consumption for convex costs
+
+            gen_h(i,t)  genset consumption for non-convex costs
+            gen_sum(i,t) genset output computation for non-convex costs
+            gen_block_lb1(i,t,k) first genset block lower bound for non-convex costs
+            gen_block_ub1(i,t,k) first genset block upper bound for non-convex costs
+            gen_block_lbn(i,t,k) kth genset block lower bound for non-convex costs
+            gen_block_ubn(i,t,k) kth genset block upper bound for non-convex costs
+            gen_block_ubk(i,t,k) last genset block upper bound for non-convex costs
+
+
+;
+
+objective_convex..     netcost =e= sum(t, voll*l(t) + prdi*sum(i, h(i,t)));
+
+objective_non_convex..     netcost =e= sum(t, voll*l(t) + prdi*(sum(i, h(i,t) + gcap(i,'NOLOAD')*u(i,t))));
+
+pow_bal(t)..    sum(i, g(i,t)) + l(t) - c(t) + somax*s(t) + wmax*w(t) - dmax*d(t) + effd*y(t) - x(t) =e= 0;
+
+ess_bal(t)$(ord(t) GT 1)..    e(t) =e= e(t-1) - y(t) + effc*x(t);
+
+ess_ch(t)..     x(t) =l= pmax*z(t);
+
+ess_di(t)..     y(t) =l= pmax*(1 - z(t));
+
+ess_up(t)..     e(t) =l= emax;
+
+ess_dn(t)..     -e(t) =l= -emin;
+
+ess_t0(t)$(ord(t) EQ 1)..   e(t) =e= e0*emax - y(t) + effc*x(t);
+
+ess_tT(t)$(ord(t) EQ card(t))..     -e(t) =l= -eT*emax;
+
+gen_up(i,t)..   g(i,t) =l= gcap(i,'GMAX')*u(i,t);
+
+gen_dn(i,t)..   -g(i,t) =l= -gcap(i,'GMIN')*u(i,t);
+
+gen_co(i,t,k)..  -h(i,t) =l= -gcon(i,k,'A')*u(i,t) - gcon(i,k,'B')*g(i,t);
+
+gen_h(i,t)..    h(i,t) =e= sum(k, gcon(i,k,'B')*j(i,t,k));
+
+gen_sum(i,t)..    g(i,t) =e= sum(k, j(i,t,k)) + gcap(i,'GMIN')*u(i,t);
+
+gen_block_lb1(i,t,k)$(ord(k) EQ 1)..    -j(i,t,k) =l= -(gcon(i,k,'C') - gcap(i,'GMIN'))*v(i,t,k);
+
+gen_block_ub1(i,t,k)$(ord(k) EQ 1)..    j(i,t,k) =l= (gcon(i,k,'C') - gcap(i,'GMIN'))*u(i,t);
+
+gen_block_lbn(i,t,k)$(ord(k) GT 1 and ord(k) LT card(k))..    -j(i,t,k) =l= -(gcon(i,k,'C') - gcon(i,k-1,'C'))*v(i,t,k);
+
+gen_block_ubn(i,t,k)$(ord(k) GT 1 and ord(k) LT card(k))..    j(i,t,k) =l= (gcon(i,k,'C') - gcon(i,k-1,'C'))*v(i,t,k-1);
+
+gen_block_ubk(i,t,k)$(ord(k) EQ card(k))..  j(i,t,k) =l= (gcap(i,'GMAX') - gcon(i,k-1,'C'))*v(i,t,k-1);
+
+model wds_convex / objective_convex, pow_bal, ess_bal, ess_ch, ess_di, ess_up, ess_dn, ess_t0, ess_tT, gen_up, gen_dn, gen_co /;
+
+model wds_non_convex / objective_non_convex, pow_bal, ess_bal, ess_ch, ess_di, ess_up, ess_dn, ess_t0, ess_tT, gen_up, gen_dn, gen_h, gen_sum, gen_block_lb1, gen_block_lbn, gen_block_ubn, gen_block_ubk  /
+
+* solve wds_convex minimizing netcost using mip;
+solve wds_non_convex minimizing netcost using mip;
+
+
+parameter hours(i), cost_diesel, lcoe, charge, discharge, dump, shed, avg_gen(i), energy_diesel, energy_wind, energy_solar, store(t), lambda(t);
+
+hours(i) = sum(t, u.l(i,t));
+cost_diesel = sum(t, prdi*sum(i, h.l(i,t)));
+lcoe = netcost.l/sum(t,dmax*d(t));
+charge = sum(t, x.l(t));
+discharge = sum(t, y.l(t));
+dump = sum(t, c.l(t));
+shed = sum(t, l.l(t));
+*avg_gen(i) = sum(t, g.l(i,t)*u.l(i,t))/sum(t, u.l(i,t));
+energy_diesel = sum((i,t),g.l(i,t));
+energy_wind = sum(t, wmax*w(t));
+energy_solar = sum(t, somax*s(t));
+store(t) = x.l(t) - y.l(t);
+lambda(t) = pow_bal.m(t);
+
+*display netcost.l, hours, charge, discharge, dump, shed, energy, lcoe, x.l, y.l;
+
+$include "matlab_utility_SES_WDS.gms";
