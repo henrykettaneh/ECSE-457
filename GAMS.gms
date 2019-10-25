@@ -116,7 +116,7 @@ p_max_lo..               p_max(s) > 0;
 
 p_min.                   p_min(s) =l= sum(m,p(s,t,m));
 
-p_max..                   sum(m,p(s,t,m)) =l= p_max(s);
+p_max..                  sum(m,p(s,t,m)) =l= p_max(s);
 
 Coeff_p..                p_min(s) =e= -Fvv(s)*p_max(s);
 
@@ -162,10 +162,10 @@ lambda_lo_m3..            0 =e= lambda(t,3)
 
 *Equation to be maximised/minimised
 *Max
-Obj_F
+Ob
 
 *Min
-Obj_G
+Obj_Gadd al
 
 *Benefits for each case
 
@@ -178,6 +178,16 @@ Price_arbitrage_m3
 Costs
 
 
+
+case1 storage_ben_fnt1.. =e= lambda(t,1)*p(s,t,1) + alpha(t)*p(s,t,1)
+case2 storage_ben_fnt2.. =e= lambda(t,2)*abs(g(t)+p(s,t,1)-g(t))+alpha(t)*p(s,t,1)
+case3 storage_ben_fnt2.. =e= alpha(t)*p(s,t,3)
+
+res1.. =e= sum(t, sum(s, storage_ben_fnt1))
+res2.. =e= sum(t, sum(s, storage_ben_fnt2))
+res2.. =e= sum(t, sum(s, storage_ben_fnt3))
+
+func.. =e= res1+res2+res3
 
 *Il faut trouver combien de subsystem (soit le set s) que nous allons avoir! Bouffard avait dit qu'on devait optimiser ceci
 
