@@ -9,6 +9,7 @@ Parameters
             alpha(t)                Price of energy in time period t ($ per kWh)
             C_eff(s)                Chargin efficiency of storage subsystem s (p.u.)
             D_eff(s)                Discharging efficiency of storage subsystem s (p.u.)
+            D_eff_prime(s_prime)    Discharging efficiency of storage subsystem s_prime (p.u.)
             delta                   Time step duration (h)
             lambda(t,m)             Value of energy storage use case m in time period t ($ per kW)
             e_0(s)                  Inital state of charge of storage subsystem s (kWh)
@@ -138,7 +139,7 @@ budget_lo..                     sum(s,Cost(s)) =l= theta_max;
 
 e_balance(s,t)..                e(s,t) =e= e(s,t-1) + delta*(C_eff(s)*sum(s_prime,p_c(s,s_prime,t))- sum(s_prime,p_d(s,s_prime,t)));
      
-p_balance(s,t)..                sum(m,p(s,t,m)) =e= sum(s_prime,D_eff(s_prime)*p_d(s,s_prime,t)-p_c(s,s_prime,t));
+p_balance(s,t)..                sum(m,p(s,t,m)) =e= sum(s_prime,D_eff_prime(s_prime)*p_d(s,s_prime,t)-p_c(s,s_prime,t));
     
 e_min_max(s)..                  e_min(s) =e= epsylon(s)*e_max(s);                   
 
