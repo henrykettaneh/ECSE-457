@@ -27,17 +27,17 @@ Parameters
 
 Variables
             p(s,t,m)                Net power of storage subsystem s during time period t allocated to storage use casem m (kW)
-            p_c(s,s_prime,t)        Charging power of storage subsystem s from storage subsystem s_prime during time period t (kW), if s_prime = s then we are charging from the grid
-            p_d(s,s_prime,t)        Discharging power of storage subsystem s from storage subsystem s_prime during time period t (kW), if s_prime = s then we are discharging from the grid
+            p_c(s,s_prime,t)        Charging power of storage subsystem s from storage subsystem s_prime during time period t (kW)
+            p_d(s,s_prime,t)        Discharging power of storage subsystem s from storage subsystem s_prime during time period t (kW)
             e(s,t)                  State of charge of storage subsystem s in period t (kWh)
             e_max(s)                Maximum state of charge of storage subsystem s (kWh)
             e_min(s)                Minimum state of charge of storage subsystem s (kWh)
             p_max(s)                Maximum power of storage subsystem s (kWh)
             p_min(s)                Minimum power of storage subsystem s (kWh)
-            u(s,t)                  Indicator if subsystem is charging or discharging (0: discharching, 1 charging, if p = 0 then subsystem is in standby)
+            u(s,t)                  Indicator for subsystem is charging or discharging 
             
-            F                       Variable for the objective function F
-            G                       Variable for the objective function G                      
+            F_obj                       Variable for the objective function F
+            G_obj                       Variable for the objective function G                      
 
 *Variable types
 positive variables p, p_c, p_d, e, e_max, e_min, p_max;
@@ -103,10 +103,10 @@ e_min_up(s)..                   e_min(s) < e_max(s);
 
 e_max_lo(s)..                   rho(s)*p_max(s) =l= e_max(s);
 
-p_max_lo(s)..                   0 < p_max(s);
+p_max_lo(s)..                   10**(-16) =l= p_max(s);
 
 *Check to see if we keep this, because alreadys tated that p_min will be a negative number!
-p_min_up(s)..                   p_min(s) < 0;
+p_min_up(s)..                   p_min(s) =l= 10**(-16);
 
 p_d_lo(s,s_prime,t)..           0 =l= p_d(s,s_prime,t);                      
 
@@ -122,9 +122,9 @@ gamma_lo(s)..                   0 =l= gamma(s);
 
 epsylon_lo(s)..                 0 =l= epsylon(s);
 
-epsylon_up(s)..                 epsylon(s) < 1;
+epsylon_up(s)..                 epsylon(s) =l= 0.9999999999999999;
 
-Fvv_lo(s)..                     0 < Fvv(s);
+Fvv_lo(s)..                     10**(-16) =g= Fvv(s);
 
 Fvv_up(s)..                     Fvv(s) =l= 1;
 
@@ -144,10 +144,10 @@ p_min_max(s)..                  p_min(s) =e= (-Fvv)*p_max(s);
 
 *Objective functions
 
-Objective_F..                   F = sum(t,sum(s, sum(m, B(s,t,m))));
+Objective_F..                   F_obj = sum(t,sum(s, sum(m, B(s,t,m))));
 *Objective_F..                   F = sum(t,sum(s, sum(m, B(p(s,t,m)))));
 
-Objective_G..                   G = sum(s,C(s)- sum(t,sum(s, sum(m, B(s,t,m))));
+Objective_G..                   G_obj = sum(s,C(s)- sum(t,sum(s, sum(m, B(s,t,m))));
 *Objective_G..                   G = sum(s,C(p_max(s),e_max(s)))- sum(t,sum(s, sum(m, B(p(s,t,m)))));
 
 *Different equations of B depending on the use case
@@ -167,7 +167,7 @@ Use_cases(s,t,m)$ (ord(m) EQ 2)..       B(s,t,m) =e= (-lambda(t,2))*abs(g_a(t) +
 Use_cases(s,t,m)$ (ord(m) EQ 3)..       B(s,t,m) =e= alpha(t)*p(s,t,3);
 *Use_cases(p(s,t,m))$ (ord(m) EQ 3)..    B(s,t,m) =e= alpha(t)*p(s,t,3);
 
-lambda_lo(t,m)$(ord(m) EQ 1)..          lambda(t,m) > 0;
+lambda_lo(t,m)$(ord(m) EQ 1)..          lambda(t,m) =g= 10**(-16);
 
 lambda_lo(t,m)$(ord(m) EQ 2)..          lambda(t,m) =g= 0;
 
