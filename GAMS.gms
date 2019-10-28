@@ -68,8 +68,9 @@ Equations
             epsylon_up(s)           Upper bound of epsylon
             Fvv_lo(s)               Lower bound of Fvv
             Fvv_up(s)               Upper bound of Fvv
-            lambda_lo(t,m)          Lower bound of lambda
-            lambda_eq(t,m)          Upper bound of lambda
+            lambda_lo1(t,m)          Lower bound of lambda
+            lambda_lo2(t,m)          Lower bound of lambda
+            lambda_eq3(t,m)          Upper bound of lambda
 *Equations
 
             e_balance(s,t)          Energy balance for each storage subsystem
@@ -169,11 +170,11 @@ Use_case2(s,t,m)$ (ord(m) EQ 2)..       B(s,t,m) =e= (-lambda(t,'2'))*abs(g_a(t)
 Use_case3(s,t,m)$ (ord(m) EQ 3)..       B(s,t,m) =e= alpha(t)*p(s,t,'3');
 *Use_cases(p(s,t,m))$ (ord(m) EQ 3)..    B(s,t,m) =e= alpha(t)*p(s,t,3);
 
-lambda_lo(t,m)$(ord(m) EQ 1)..          lambda(t,m) =g= 10**(-16);
+lambda_lo1(t,m)$(ord(m) EQ 1)..          lambda(t,m) =g= 10**(-16);
 
-lambda_lo(t,m)$(ord(m) EQ 2)..          lambda(t,m) =g= 0;
+lambda_lo2(t,m)$(ord(m) EQ 2)..          lambda(t,m) =g= 0;
 
-lambda_eq(t,m)$(ord(m) EQ 3)..          lambda(t,m) =e= 3;
+lambda_eq3(t,m)$(ord(m) EQ 3)..          lambda(t,m) =e= 3;
 
 *Will change the all later!
 model benefits /all/;
