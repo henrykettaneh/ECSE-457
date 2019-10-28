@@ -39,6 +39,7 @@ Variables
             F_obj                   Variable for the objective function F
             G_obj                   Variable for the objective function G
             B(s,t,m)                Benefits for each use case
+            Cost(s)                 Linear increasing costs
 
 *Variable types
 positive variables p, p_c, p_d, e, e_max, e_min, p_max;
@@ -81,7 +82,6 @@ Equations
             Use_case2(s,t,m)        Use cases m = 2
             Use_case3(s,t,m)        Use cases m = 3
 *            B(p(s,t,m))             Benefits for each use case
-            Cost(s)                 Linear increasing costs
 *            Cost(p_max(s),e_max(s))    Linear increasing costs            
 
 *Objective functions
@@ -102,7 +102,7 @@ p_balance_up(s,t)..             sum(m, p(s,t,m)) =l= p_max(s);
 
 e_min_lo(s)..                   0 =l= e_min(s);
 
-e_min_up(s)..                   e_min(s) < e_max(s);
+e_min_up(s)..                   e_min(s) =l= 0.9999999999999999*e_max(s);
 
 e_max_lo(s)..                   rho(s)*p_max(s) =l= e_max(s);
 
@@ -147,17 +147,17 @@ p_min_max(s)..                  p_min(s) =e= (-Fvv(s))*p_max(s);
 
 *Objective functions
 
-Objective_F..                   F_obj = sum(t,sum(s, sum(m, B(s,t,m))));
+Objective_F..                   F_obj =e= sum(t,sum(s, sum(m, B(s,t,m))));
 *Objective_F..                   F = sum(t,sum(s, sum(m, B(p(s,t,m)))));
 
-Objective_G..                   G_obj = sum(s,Cost(s)- sum(t,sum(s, sum(m, B(s,t,m))));
+Objective_G..                   G_obj =e= sum(s,Cost(s))- sum(t,sum(s, sum(m, B(s,t,m))));
 *Objective_G..                   G = sum(s,C(p_max(s),e_max(s)))- sum(t,sum(s, sum(m, B(p(s,t,m)))));
 
 *Different equations of B depending on the use case
 
 *Peak Shaving (m = 1)
 
-Use_case1(s,t,m)$ (ord(m) EQ 1)..       B(s,t,m) =e= lambda(t,'1')*p(s,t,1)+alpha(t)*p(s,t,1);    
+Use_case1(s,t,m)$ (ord(m) EQ 1)..       B(s,t,m) =e= lambda(t,'1')*p(s,t,'1')+alpha(t)*p(s,t,'1');    
 *Use_cases(p(s,t,m))$ (ord(m) EQ 1)..    B(s,t,m) =e= lambda(t,1)*p(s,t,1)+alpha(t)*p(s,t,1);   
 
 *Balancing (m = 2)
