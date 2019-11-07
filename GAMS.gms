@@ -1,30 +1,37 @@
 Sets
-            m                       Index of energy storage use cases 1 to M    /1, 2, 3/
-            s                       Index of energy storage subsystems 1 to S
-            t                       Index of time periods 0 to T
-            t0(m)                   Set of time periods during which use cas m is deployed            
-            s_prime                 Index of energy storage subsystem that charges  another subsystem or who is being charge by another subsystem
+            m                       Index of energy storage use cases 1 to M    /1*3/
+            s                       Index of energy storage subsystems 1 to n to S /1*10/
+            Li(s)                   Dynamic set of lithium-ion batteries /1*9/
+            Fly(s)                  Dynamic set of flywheels /10/
+            t                       Index of time periods 0 to T /1*8760/
+***** Why do we have that parameter if not used (logic is kind of used in the labmda cases)
+            t0(m)                   Set of time periods during which use cas m is deployed 
+*****Check logic of prime... might need to change something (like add that s_prime cannot be equal to s in constraints??)
+            s_prime(s)              Index of energy storage subsystem that charges  another subsystem or who is being charge by another subsystem /1*10/
+
     
 Parameters
-            alpha(t)                Price of energy in time period t ($ per kWh)
-            C_eff(s)                Chargin efficiency of storage subsystem s (p.u.)
-            D_eff(s)                Discharging efficiency of storage subsystem s (p.u.)
-            D_eff_prime(s_prime)    Discharging efficiency of storage subsystem s_prime (p.u.)
-            delta                   Time step duration (h)
+            alpha(t)                Price of energy in time period t ($ per kWh) 
+            C_eff(s)                Chargin efficiency of storage subsystem s (p.u.) /set.Li 0.99, set.Fly 0.93/
+            D_eff(s)                Discharging efficiency of storage subsystem s (p.u.) /set.Li 0.85, set.Fly 0.97/
+            D_eff_prime(s_prime)    Discharging efficiency of storage subsystem s_prime (p.u.) /set.Li 0.85, set.Fly 0.97/
+            delta                   Time step duration (h) /1/
             lambda(t,m)             Value of energy storage use case m in time period t ($ per kW)
-            e_0(s)                  Inital state of charge of storage subsystem s (kWh)
-            g_a(t)                  Actual renewable energy generation in time period t
+************ Do three trials one where assumption is batteries start at full charge, another at no charge amd finally at mid charge?
+            e_0(s)                  Inital state of charge of storage subsystem s (kWh)/set.Li 100, set.Fly 25/ 
+            g_a(t)                  Actual renewable energy generation in time period t 
             g_t(t)                  Target renewable energy generation in time period t
-            beta(s)                 Cost of power capacity for storage subsystem technology s ($ per kWh)
-            gamma(s)                Cost of energy storage capacity for storage subsystem technology s ($ per kW)
-            rho(s)                  Minimum energy-to-power ratio of energy storage subsystem s (kWh per kW)
-            epsylon(s)              Coefficient relating the maximum and minimum state of charge of storage subsystem s (p.u.)
-            Fvv(s)                  Coefficient relating the maximum and minimum power of storage subsystem s (p.u.)
+************ Energy and power capital costs of 2018 used, if we switch to 2025 it is estimated to be for li-ion:30.33 and 121.32 respectively, see which values to use! 
+            beta(s)                 Cost of power capacity for storage subsystem technology s ($ per kW) /set.Li 173.96, set.Fly 283.80/
+            gamma(s)                Cost of energy storage capacity for storage subsystem technology s ($ per kWh) /set.Li 43.49, set.Fly 2936.04/ 
+            rho(s)                  Minimum energy-to-power ratio of energy storage subsystem s (kWh per kW) /set.Li 1, set.Fly 4/  
+            epsylon(s)              Coefficient relating the maximum and minimum state of charge of storage subsystem s (p.u.) /set.Li 0.85, set.Fly 0.8/
+            Fvv(s)                  Coefficient relating the maximum and minimum power of storage subsystem s (p.u.)/set.Li 0.8, set.Fly 0.5/
             theta_max               Investment budget ($)
+            Count                   For looping purposes /1/
 
+$include "TOU.gms";
 **Something about options??? TO CHECK OUT WHAT THAT IS
-
-**If we decide to do two different files must do : $Inlcude: "NameOfTheFile";
 
 Variables
             p(s,t,m)                Net power of storage subsystem s during time period t allocated to storage use casem m (kW)
@@ -37,8 +44,8 @@ Variables
             p_min(s)                Minimum power of storage subsystem s (kWh)
             u(s,t)                  Indicator for subsystem is charging or discharging 
             
-            F_obj                   Variable for the objective function F
-            G_obj                   Variable for the objective function G
+            F_obj                   Variable for the objective_F
+            G_obj                   Variable for the objective_G
             B(s,t,m)                Benefits for each use case
             Cost(s)                 Linear increasing costs
 
@@ -52,8 +59,8 @@ Equations
 *Constraints
             e_balance_lo(s,t)       Lower bound of the energy balance equation
             e_balance_up(s,t)       Upper bound of the energy balance
-            p_balance_lo(s,t)     Lower bound of the power contribution
-            p_balance_up(s,t)     Upper bound of the power contribution
+            p_balance_lo(s,t)       Lower bound of the power contribution
+            p_balance_up(s,t)       Upper bound of the power contribution
             e_min_lo(s)             Lower bound of the minimum state of charge
             e_min_up(s)             Upper bound of the minimum state of charge
             e_max_lo(s)             Lower bound of the maximum state of charge
@@ -70,18 +77,22 @@ Equations
             epsylon_up(s)           Upper bound of epsylon
             Fvv_lo(s)               Lower bound of Fvv
             Fvv_up(s)               Upper bound of Fvv
-            lambda_lo1(t,m)          Lower bound of lambda
-            lambda_lo2(t,m)          Lower bound of lambda
-            lambda_eq3(t,m)          Upper bound of lambda
+            lambda_lo1(t,m)         Lower bound of lambda
+            lambda_lo2(t,m)         Lower bound of lambda
+            lambda_eq3(t,m)         Upper bound of lambda
+            s_s_prime(s,s_prime)
 *Equations
 
             e_balance(s,t)          Energy balance for each storage subsystem
-            p_balance(s,t)        Power contribution for each use case and storage subsystem
+            p_balance(s,t)          Power contribution for each use case and storage subsystem
             e_min_max(s)            Relationship between min and max state of charge
             p_min_max(s)            Relationship between min and max power
             Use_case1(s,t,m)        Use cases m = 1
             Use_case2(s,t,m)        Use cases m = 2
             Use_case3(s,t,m)        Use cases m = 3
+*            Use_case1(p(s,t,m))        Use cases m = 1
+*            Use_case2(p(s,t,m))        Use cases m = 2
+*            Use_case3(p(s,t,m))        Use cases m = 3
 *            B(p(s,t,m))             Benefits for each use case
 *            Cost(p_max(s),e_max(s))    Linear increasing costs            
 
@@ -109,7 +120,7 @@ e_max_lo(s)..                   rho(s)*p_max(s) =l= e_max(s);
 
 p_max_lo(s)..                   10**(-16) =l= p_max(s);
 
-*Check to see if we keep this, because alreadys tated that p_min will be a negative number!
+*Check to see if we keep this, because alreadys stated that p_min will be a negative number!
 p_min_up(s)..                   p_min(s) =l= 10**(-16);
 
 p_d_lo(s,s_prime,t)..           0 =l= p_d(s,s_prime,t);                      
@@ -134,7 +145,8 @@ Fvv_up(s)..                     Fvv(s) =l= 1;
 
 budget_lo..                     sum(s,Cost(s)) =l= theta_max;
 *budget_lo..                     sum(s,C(p_max(s),e_max(s))) =l= theta_max;
-               
+
+              
 *Equations
 
 e_balance(s,t)..                e(s,t) =e= e(s,t-1) + delta*(C_eff(s)*sum(s_prime,p_c(s,s_prime,t))- sum(s_prime,p_d(s,s_prime,t)));
@@ -159,33 +171,34 @@ Objective_G..                   G_obj =e= sum(s,Cost(s))- sum(t,sum(s, sum(m, B(
 *Peak Shaving (m = 1)
 
 Use_case1(s,t,m)$ (ord(m) EQ 1)..       B(s,t,m) =e= lambda(t,'1')*p(s,t,'1')+alpha(t)*p(s,t,'1');    
-*Use_cases(p(s,t,m))$ (ord(m) EQ 1)..    B(s,t,m) =e= lambda(t,1)*p(s,t,1)+alpha(t)*p(s,t,1);   
+*Use_case1(p(s,t,m))$ (ord(m) EQ 1)..    B(s,t,m) =e= lambda(t,'1')*p(s,t,'1')+alpha(t)*p(s,t,'1');   
 
 *Balancing (m = 2)
 
 Use_case2(s,t,m)$ (ord(m) EQ 2)..       B(s,t,m) =e= (-lambda(t,'2'))*abs(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
-*Use_cases(p(s,t,m))$ (ord(m) EQ 2)..    B(s,t,m) =e= (-lambda(t,2))*abs(g_a(t) + p(s,t,2) - g_t(t)) + alpha(t)*p(s,t,2);
+*Use_case2(p(s,t,m))$ (ord(m) EQ 2)..    B(s,t,m) =e= (-lambda(t,'2'))*abs(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
 
 *Price arbitrage (m = 3)
 
 Use_case3(s,t,m)$ (ord(m) EQ 3)..       B(s,t,m) =e= alpha(t)*p(s,t,'3');
-*Use_cases(p(s,t,m))$ (ord(m) EQ 3)..    B(s,t,m) =e= alpha(t)*p(s,t,3);
+*Use_case3(p(s,t,m))$ (ord(m) EQ 3)..    B(s,t,m) =e= alpha(t)*p(s,t,'3');
 
 lambda_lo1(t,m)$(ord(m) EQ 1)..          lambda(t,m) =g= 10**(-16);
 
 lambda_lo2(t,m)$(ord(m) EQ 2)..          lambda(t,m) =g= 0;
 
-lambda_eq3(t,m)$(ord(m) EQ 3)..          lambda(t,m) =e= 3;
+lambda_eq3(t,m)$(ord(m) EQ 3)..          lambda(t,m) =e= 0;
 
 *Will change the all later!
 model benefits /all/;
 
 model costs /all/;
 
-solve benefits using lp maximizing F_obj;
+*for(count = 1 to (card(s)-1)
+    
+    solve benefits using minlp maximizing F_obj;
 
-solve costs using lp minimizing G_obj;
-           
-
+    solve costs using minlp minimizing G_obj;         
+*)
 
 
