@@ -4,22 +4,21 @@ Sets
             Li(s)                   Dynamic set of lithium-ion batteries /1*9/
             Fly(s)                  Dynamic set of flywheels /10/
             t                       Index of time periods 0 to T /1*8760/
-***** Why do we have that parameter if not used (logic is kind of used in the labmda cases)
             t0(m)                   Set of time periods during which use cas m is deployed 
 *****Check logic of prime... might need to change something (like add that s_prime cannot be equal to s in constraints??)
-            s_prime(s)              Index of energy storage subsystem that charges  another subsystem or who is being charge by another subsystem /1*10/
-
+            Alias(s,s_prime);        
     
 Parameters
             alpha(t)                Price of energy in time period t ($ per kWh) 
             C_eff(s)                Chargin efficiency of storage subsystem s (p.u.) /set.Li 0.99, set.Fly 0.93/
             D_eff(s)                Discharging efficiency of storage subsystem s (p.u.) /set.Li 0.85, set.Fly 0.97/
             D_eff_prime(s_prime)    Discharging efficiency of storage subsystem s_prime (p.u.) /set.Li 0.85, set.Fly 0.97/
-            delta                   Time step duration (h) /1/
+            delta                   Time step duration (h) 
             lambda(t,m)             Value of energy storage use case m in time period t ($ per kW)
 ************ Do three trials one where assumption is batteries start at full charge, another at no charge amd finally at mid charge?
             e_0(s)                  Inital state of charge of storage subsystem s (kWh)/set.Li 100, set.Fly 25/ 
-            g_a(t)                  Actual renewable energy generation in time period t 
+            g_a(t)                  Actual renewable energy generation in time period t
+*Flat out energy (by doing an integral)--> solar and/or wind
             g_t(t)                  Target renewable energy generation in time period t
 ************ Energy and power capital costs of 2018 used, if we switch to 2025 it is estimated to be for li-ion:30.33 and 121.32 respectively, see which values to use! 
             beta(s)                 Cost of power capacity for storage subsystem technology s ($ per kW) /set.Li 173.96, set.Fly 283.80/
@@ -29,7 +28,7 @@ Parameters
             Fvv(s)                  Coefficient relating the maximum and minimum power of storage subsystem s (p.u.)/set.Li 0.8, set.Fly 0.5/
             theta_max               Investment budget ($)
             Count                   For looping purposes /1/
-
+;
 $include "TOU.gms";
 **Something about options??? TO CHECK OUT WHAT THAT IS
 
@@ -88,11 +87,9 @@ Equations
             e_min_max(s)            Relationship between min and max state of charge
             p_min_max(s)            Relationship between min and max power
             Use_case1(s,t,m)        Use cases m = 1
-            Use_case2(s,t,m)        Use cases m = 2
+            Use_case2_pos(s,t,m)    Use cases m = 2 (absolute value)
+            Use_case2_neg(s,t,m)    Use cases m = 2 (absolute value)
             Use_case3(s,t,m)        Use cases m = 3
-*            Use_case1(p(s,t,m))        Use cases m = 1
-*            Use_case2(p(s,t,m))        Use cases m = 2
-*            Use_case3(p(s,t,m))        Use cases m = 3
 *            B(p(s,t,m))             Benefits for each use case
 *            Cost(p_max(s),e_max(s))    Linear increasing costs            
 
@@ -104,32 +101,32 @@ Equations
 ;
 
 *Constraints
-e_balance_lo(s,t)..             e_min(s) =l= e(s,t);
+e_balance_lo(s,t)..                                      e_min(s) =l= e(s,t);
 
-e_balance_up(s,t)..             e(s,t) =l= e_max(s);             
+e_balance_up(s,t)..                                      e(s,t) =l= e_max(s);             
 
-p_balance_lo(s,t)..             p_min(s) =l= sum(m, p(s,t,m));
+p_balance_lo(s,t)..                                      p_min(s) =l= sum(m, p(s,t,m));
 
-p_balance_up(s,t)..             sum(m, p(s,t,m)) =l= p_max(s);
+p_balance_up(s,t)..                                      sum(m, p(s,t,m)) =l= p_max(s);
+        
+e_min_lo(s)..                                            0 =l= e_min(s);
 
-e_min_lo(s)..                   0 =l= e_min(s);
+e_min_up(s)..                                            e_min(s) =l= 0.9999999999999999*e_max(s);
 
-e_min_up(s)..                   e_min(s) =l= 0.9999999999999999*e_max(s);
+e_max_lo(s)..                                            rho(s)*p_max(s) =l= e_max(s);
 
-e_max_lo(s)..                   rho(s)*p_max(s) =l= e_max(s);
-
-p_max_lo(s)..                   10**(-16) =l= p_max(s);
+p_max_lo(s)..                                            10**(-16) =l= p_max(s);
 
 *Check to see if we keep this, because alreadys stated that p_min will be a negative number!
-p_min_up(s)..                   p_min(s) =l= 10**(-16);
+p_min_up(s)..                                            p_min(s) =l= 10**(-16);
 
-p_d_lo(s,s_prime,t)..           0 =l= p_d(s,s_prime,t);                      
+p_d_lo(s,s_prime,t)..                                    0 =l= p_d(s,s_prime,t);                      
 
-p_d_up(s,s_prime,t)..           p_d(s,s_prime,t) =l= p_min(s)*(u(s,t)-1);
+p_d_up(s,s_prime,t)$(ord(s) <> ord(s_prime))..           p_d(s,s_prime,t) =l= p_min(s)*(u(s,t)-1);
   
-p_c_lo(s,s_prime,t)..           0 =l= p_c(s,s_prime,t);
+p_c_lo(s,s_prime,t)$(ord(s) <> ord(s_prime))..           0 =l= p_c(s,s_prime,t);
 
-p_c_up(s,s_prime,t)..           p_c(s,s_prime,t) =l= p_max(s)*u(s,t);
+p_c_up(s,s_prime,t)$(ord(s) <> ord(s_prime))..           p_c(s,s_prime,t) =l= p_max(s)*u(s,t);
 
 beta_lo(s)..                    0 =l= beta(s);
 
@@ -144,7 +141,6 @@ Fvv_lo(s)..                     10**(-16) =g= Fvv(s);
 Fvv_up(s)..                     Fvv(s) =l= 1;
 
 budget_lo..                     sum(s,Cost(s)) =l= theta_max;
-*budget_lo..                     sum(s,C(p_max(s),e_max(s))) =l= theta_max;
 
               
 *Equations
@@ -160,45 +156,46 @@ p_min_max(s)..                  p_min(s) =e= (-Fvv(s))*p_max(s);
 
 *Objective functions
 
-Objective_F..                   F_obj =e= sum(t,sum(s, sum(m, B(s,t,m))));
-*Objective_F..                   F = sum(t,sum(s, sum(m, B(p(s,t,m)))));
+Objective_F..                                                                           F_obj =e= sum(t,sum(s, sum(m, B(s,t,m))));
 
-Objective_G..                   G_obj =e= sum(s,Cost(s))- sum(t,sum(s, sum(m, B(s,t,m))));
-*Objective_G..                   G = sum(s,C(p_max(s),e_max(s)))- sum(t,sum(s, sum(m, B(p(s,t,m)))));
+
+Objective_G..                                                                           G_obj =e= sum(s,Cost(s))- sum(t,sum(s, sum(m, B(s,t,m))));
 
 *Different equations of B depending on the use case
 
 *Peak Shaving (m = 1)
 
-Use_case1(s,t,m)$ (ord(m) EQ 1)..       B(s,t,m) =e= lambda(t,'1')*p(s,t,'1')+alpha(t)*p(s,t,'1');    
-*Use_case1(p(s,t,m))$ (ord(m) EQ 1)..    B(s,t,m) =e= lambda(t,'1')*p(s,t,'1')+alpha(t)*p(s,t,'1');   
+Use_case1(s,t,m)$ (ord(m) EQ 1)..                                                       B(s,t,m) =e= lambda(t,'1')*p(s,t,'1')+alpha(t)*p(s,t,'1');    
+
 
 *Balancing (m = 2)
+Use_case2_pos(s,t,m)$ ((ord(m) EQ 2) and ((g_a(t) + p(s,t,'2') - g_t(t)) lt 0))..       B(s,t,m) =g= (-lambda(t,'2'))*(-1)*(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
 
-Use_case2(s,t,m)$ (ord(m) EQ 2)..       B(s,t,m) =e= (-lambda(t,'2'))*abs(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
-*Use_case2(p(s,t,m))$ (ord(m) EQ 2)..    B(s,t,m) =e= (-lambda(t,'2'))*abs(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
+Use_case2_neg(s,t,m)$ ((ord(m) EQ 2) and ((g_a(t) + p(s,t,'2') - g_t(t)) gt 0))..       B(s,t,m) =g= (-lambda(t,'2'))*(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
+
 
 *Price arbitrage (m = 3)
 
-Use_case3(s,t,m)$ (ord(m) EQ 3)..       B(s,t,m) =e= alpha(t)*p(s,t,'3');
-*Use_case3(p(s,t,m))$ (ord(m) EQ 3)..    B(s,t,m) =e= alpha(t)*p(s,t,'3');
+Use_case3(s,t,m)$ (ord(m) EQ 3)..                                                       B(s,t,m) =e= alpha(t)*p(s,t,'3');
 
-lambda_lo1(t,m)$(ord(m) EQ 1)..          lambda(t,m) =g= 10**(-16);
+lambda_lo1(t,m)$(ord(m) EQ 1)..                                                         lambda(t,m) =g= 10**(-16);
 
-lambda_lo2(t,m)$(ord(m) EQ 2)..          lambda(t,m) =g= 0;
+lambda_lo2(t,m)$(ord(m) EQ 2)..                                                         lambda(t,m) =g= 0;
 
-lambda_eq3(t,m)$(ord(m) EQ 3)..          lambda(t,m) =e= 0;
+lambda_eq3(t,m)$(ord(m) EQ 3)..                                                         lambda(t,m) =e= 0;
 
 *Will change the all later!
 model benefits /all/;
 
 model costs /all/;
 
+*Export results to gds, or export them into mathlab
+*Do a grid for the index of each subsystem and then change place in teh grad for each iteration
 *for(count = 1 to (card(s)-1)
     
-    solve benefits using minlp maximizing F_obj;
+    solve benefits using mip maximizing F_obj;
 
-    solve costs using minlp minimizing G_obj;         
+    solve costs using mip minimizing G_obj;         
 *)
 
 
