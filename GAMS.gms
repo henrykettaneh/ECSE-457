@@ -82,9 +82,7 @@ Equations
             lambda_lo1(t,m)         Lower bound of lambda
             lambda_lo2(t,m)         Lower bound of lambda
             lambda_eq3(t,m)         Upper bound of lambda
-            Pos_abs
-            Neg_abs
-*            Use_case2_Const(s,t,m)  Constraint for B when absolute value is present
+            abs_const(s,t,m)        Constraint for absolute function
             
 *Equations
 
@@ -94,7 +92,7 @@ Equations
             p_min_max(s)            Relationship between min and max power
             Use_case1(s,t,m)        Use cases m is 1
             Use_case2_pos(s,t,m)    Use cases m is 2 (absolute value)
-*            Use_case2_neg(s,t,m)    Use cases m is 2 (absolute value)
+            Use_case2_neg(s,t,m)    Use cases m is 2 (absolute value)
             Use_case3(s,t,m)        Use cases m is 3
             Budget(s)               Cost of the whole operation
          
@@ -130,7 +128,7 @@ p_d_lo(s,s_prime,t)..                                    0 =l= p_d(s,s_prime,t);
 
 p_d_up(s,s_prime,t)$((ord(s) NE ord(s_prime)))..           p_d(s,s_prime,t) =l= p_min(s)*(-1);
   
-p_c_lo(s,s_prime,t)$(ord(s) NE ord(s_prime))..                             0 =l= p_c(s,s_prime,t);
+p_c_lo(s,s_prime,t)$(ord(s) NE ord(s_prime))..             0 =l= p_c(s,s_prime,t);
 
 p_c_up(s,s_prime,t)$((ord(s) NE ord(s_prime)))..           p_c(s,s_prime,t) =l= p_max(s);
 
@@ -179,11 +177,11 @@ Use_case1(s,t,m)$ (ord(m) EQ 1)..                                               
 
             
 
-Use_case2_pos(s,t,m)$ ((ord(m) EQ 2) and ((g_a(t) + p(s,t,'2') - g_t(t)) gt 0))..       B(s,t,m) =g= (-lambda(t,'2'))*(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
+Use_case2_pos(s,t,m)$(ord(m) EQ 2)..       B(s,t,m) =g= (-lambda(t,'2'))*(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
 
-*Use_case2_neg(s,t,m)$ ((ord(m) EQ 2) and ((g_a(t) + p(s,t,'2') - g_t(t)) lt 0))..       B(s,t,m) =g= (-lambda(t,'2'))*(-1)*(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
+Use_case2_neg(s,t,m)$(ord(m) EQ 2)..       B(s,t,m) =g= (-lambda(t,'2'))*(-1)*(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
 
-*Use_case2_Const(s,t,m)$((ord(m) EQ 2) and ((g_a(t) + p(s,t,'2') - g_t(t)) EQ 0))..      B(s,t,m) =e= 0;
+abs_const(s,t,m)$(ord(m) EQ 2)..           (g_a(t) + p(s,t,'2') - g_t(t)) =g= 0;
 
 *Price arbitrage (m = 3)
 
