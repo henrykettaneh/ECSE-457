@@ -48,8 +48,7 @@ Variables
             G_obj                   Variable for the objective G
             B(s,t,m)                Benefits for each use case
             Cost(s)                 Linear increasing costs
-*            Pos                     For linear purposes
-*            Neg                     For linear puposes
+            y(s,t,m)                For linear purposes
 
 *Variable types
 positive variables p, p_c, p_d, e, e_max, e_min, p_max;
@@ -83,6 +82,8 @@ Equations
             lambda_lo2(t,m)         Lower bound of lambda
             lambda_eq3(t,m)         Upper bound of lambda
             abs_const(s,t,m)        Constraint for absolute function
+            abs_pos(s,t,m)          Function for absolute function
+            abs_neg(s,t,m)          Function for absolute function
             
 *Equations
 
@@ -91,8 +92,7 @@ Equations
             e_min_max(s)            Relationship between min and max state of charge
             p_min_max(s)            Relationship between min and max power
             Use_case1(s,t,m)        Use cases m is 1
-            Use_case2_pos(s,t,m)    Use cases m is 2 (absolute value)
-            Use_case2_neg(s,t,m)    Use cases m is 2 (absolute value)
+            Use_case2(s,t,m)        Use cases m is 2 (absolute value)
             Use_case3(s,t,m)        Use cases m is 3
             Budget(s)               Cost of the whole operation
          
@@ -177,11 +177,15 @@ Use_case1(s,t,m)$ (ord(m) EQ 1)..                                               
 
             
 
-Use_case2_pos(s,t,m)$(ord(m) EQ 2)..       B(s,t,m) =g= (-lambda(t,'2'))*(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
+Use_case2(s,t,m)$(ord(m) EQ 2)..           B(s,t,m) =g= (-lambda(t,'2'))*y(s,t,m) + alpha(t)*p(s,t,'2');
 
-Use_case2_neg(s,t,m)$(ord(m) EQ 2)..       B(s,t,m) =g= (-lambda(t,'2'))*(-1)*(g_a(t) + p(s,t,'2') - g_t(t)) + alpha(t)*p(s,t,'2');
+abs_pos(s,t,m)$(ord(m) EQ 2)..             y(s,t,m) =g= (g_a(t) + p(s,t,'2') - g_t(t));
 
-abs_const(s,t,m)$(ord(m) EQ 2)..           (g_a(t) + p(s,t,'2') - g_t(t)) =g= 0;
+abs_neg(s,t,m)$(ord(m) EQ 2)..             y(s,t,m) =g= -1*(g_a(t) + p(s,t,'2') - g_t(t));
+
+abs_const(s,t,m)$(ord(m) EQ 2)..           y(s,t,m) =g= 0;
+
+
 
 *Price arbitrage (m = 3)
 
