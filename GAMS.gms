@@ -54,9 +54,9 @@ Variables
             u(s,t)                  Indicator for subsystem is charging or discharging 
             
             F_obj                   Variable for the objective F
-*            G_obj                   Variable for the objective G
+            G_obj                   Variable for the objective G
             B(s,t,m)                Benefits for each use case
-*            Cost(s)                 Linear increasing costs
+            Cost(s)                 Linear increasing costs
             y(s,t,m)                For linear purposes
 
 *Variable types
@@ -103,14 +103,14 @@ Equations
             Use_case1(s,t,m)        Use cases m is 1
             Use_case2(s,t,m)        Use cases m is 2 (absolute value)
             Use_case3(s,t,m)        Use cases m is 3
-*            Budget(s)               Cost of the whole operation
+            Budget(s)               Cost of the whole operation
          
 
 *Objective functions
 *To be maximized
             Objective_F
 *To be minimized
-*            Objective_G
+            Objective_G
 ;
 
 *Constraints
@@ -167,14 +167,14 @@ e_min_max(s)..                  e_min(s) =e= epsylon(s)*e_max(s);
 
 p_min_max(s)..                  p_min(s) =e= (-Fvv(s))*p_max(s);
 
-*Budget(s)..                     Cost(s) =e= beta(s)*p_max(s)+ gam(s)*e_max(s);
+Budget(s)..                     Cost(s) =e= beta(s)*p_max(s)+ gam(s)*e_max(s);
 
 *Objective functions
 
 Objective_F..                   F_obj =e= sum((t,s,m),B(s,t,m));
 
 
-*Objective_G..                   G_obj =e= sum(s,Cost(s))- sum((t,s,m), B(s,t,m));
+Objective_G..                   G_obj =e= sum(s,Cost(s))- sum((t,s,m), B(s,t,m));
 
 *Different equations of B depending on the use case
 
@@ -208,19 +208,21 @@ lambda_lo2(t,m)$(ord(m) EQ 2)..            lambda(t,m) =g= 0;
 lambda_eq3(t,m)$(ord(m) EQ 3)..            lambda(t,m) =e= 0;
 
 *Will change the all later!
-model benefits /all/;
+model benefits /Objective_F, e_balance_lo, e_balance_up, p_balance_lo, p_balance_up, e_min_lo, e_min_up, e_max_lo, p_max_lo, p_min_up, p_d_lo, p_d_up, p_c_lo, p_c_up, beta_lo, gam_lo, epsylon_lo, epsylon_up, Fvv_lo, Fvv_up, e_balance, p_balance, e_min_max, p_min_max,
+Use_case1, Use_case2, abs_pos, abs_neg, abs_const, Use_case3, lambda_lo1, lambda_lo2, lambda_eq3/;
 
-model costs /all/;
+model costs /Objective_G, e_balance_lo, e_balance_up, p_balance_lo, p_balance_up, e_min_lo, e_min_up, e_max_lo, p_max_lo, p_min_up, p_d_lo, p_d_up, p_c_lo, p_c_up, beta_lo, gam_lo, epsylon_lo, epsylon_up, Fvv_lo, Fvv_up, e_balance, p_balance, e_min_max, p_min_max,
+Use_case1, Use_case2, abs_pos, abs_neg, abs_const, Use_case3, lambda_lo1, lambda_lo2, lambda_eq3, Budget/;
 
 *Export results to gds, or export them into mathlab
-*Do a grid for the index of each subsystem and then change place in teh grad for each iteration
+*Do a grid for the index of each subsystem and then change place in the grad for each iteration
 *for(count = 3 to (card(s)+1)
     
 *    for(s = count+1 to card(s)+1
     
         solve benefits maximizing F_obj using mip;
 
-*        solve costs minimizing G_obj using mip;
+        solve costs minimizing G_obj using mip;
         
 *        Li(s) = yes;
 
@@ -228,5 +230,8 @@ model costs /all/;
     
 *    fly(s) = yes;
 *)
+
+
+
 
 
