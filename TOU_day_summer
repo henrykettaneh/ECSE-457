@@ -1,4 +1,4 @@
-parameter alpha(t) Price of energy at time interval t for winter
+parameter alpha(t) Price of energy at time interval t for summer
 *t      alpha(t) ($)
     /1	0.065
     2	0.065
